@@ -19,7 +19,7 @@ st.set_page_config(
 
 # -------- SIDEBAR: Profile & Navigation --------
 with st.sidebar:
-    st.image("https://avatars.githubusercontent.com/u/139233883?v=4", width=120)
+    st.image("https://github.com/atik-efaz5.png", width=120)
     st.title("Atik Shahariyar Hasan")
     st.markdown(
         """
