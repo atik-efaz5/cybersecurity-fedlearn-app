@@ -212,57 +212,80 @@ with tab3:
 
 with tab4:
     st.markdown("### Data Balancing (SMOTE & Sampling)")
-    df = st.session_state.get('df')
-    if df is not None:
-        st.success("All class balancing logic from your notebook is here, with color and interactivity.")
-        st.markdown("#### Choose a balancing method for your data:")
-        balance_method = st.radio(
-            "Select method:",
-            options=[
-                "None (Keep original)", 
-                "Random Over Sampling", 
-                "Random Under Sampling", 
-                "SMOTE (Recommended for imbalanced data)"
-            ]
-        )
-        if 'Attack' in df.columns:
-            st.info("Original class distribution:")
-            st.bar_chart(df['Attack'].value_counts())
-            st.write(df['Attack'].value_counts())
-            X = df.drop(columns=['Attack'])
-            y = df['Attack']
-        else:
-            st.warning("'Attack' column not found in your data.")
-            X = df.copy()
-            y = pd.Series([0]*len(df))
-        if balance_method == "SMOTE (Recommended for imbalanced data)":
-            from imblearn.over_sampling import SMOTE
-            sm = SMOTE(random_state=42)
+    st.success("All class balancing logic from your notebook is here, with color and interactivity.")
+
+    # Let user pick balancing method
+    st.markdown("#### Choose a balancing method for your data:")
+    balance_method = st.radio(
+        "Select method:",
+        options=[
+            "None (Keep original)", 
+            "Random Over Sampling", 
+            "Random Under Sampling", 
+            "SMOTE (Recommended for imbalanced data)"
+        ]
+    )
+    
+    # Show original class distribution
+    if 'Attack' in df.columns:
+        st.info("Original class distribution:")
+        st.bar_chart(df['Attack'].value_counts())
+        st.write(df['Attack'].value_counts())
+
+    # Prepare features and target for balancing
+    if 'Attack' in df.columns:
+        X = df.drop(columns=['Attack'])
+        y = df['Attack']
+    else:
+        st.warning("'Attack' column not found in your data.")
+        X = df.copy()
+        y = pd.Series([0]*len(df))  # Placeholder
+
+    # --- Warn if any class is rare (SMOTE will fail) ---
+    rare_classes = y.value_counts()[y.value_counts() < 6]
+    if not rare_classes.empty:
+        st.warning(f"Warning: These classes have less than 6 samples (SMOTE may fail): {dict(rare_classes)}")
+
+    # Balancing logic with robust error handling
+    if balance_method == "SMOTE (Recommended for imbalanced data)":
+        from imblearn.over_sampling import SMOTE
+        sm = SMOTE(random_state=42)
+        try:
             X_bal, y_bal = sm.fit_resample(X, y)
             st.balloons()
             st.success("SMOTE applied: Class balancing complete!")
             st.bar_chart(pd.Series(y_bal).value_counts())
             st.write(pd.Series(y_bal).value_counts())
-        elif balance_method == "Random Over Sampling":
-            from imblearn.over_sampling import RandomOverSampler
-            ros = RandomOverSampler(random_state=42)
-            X_bal, y_bal = ros.fit_resample(X, y)
-            st.balloons()
-            st.success("Random Over Sampling applied!")
-            st.bar_chart(pd.Series(y_bal).value_counts())
-            st.write(pd.Series(y_bal).value_counts())
-        elif balance_method == "Random Under Sampling":
-            from imblearn.under_sampling import RandomUnderSampler
-            rus = RandomUnderSampler(random_state=42)
-            X_bal, y_bal = rus.fit_resample(X, y)
-            st.success("Random Under Sampling applied!")
-            st.bar_chart(pd.Series(y_bal).value_counts())
-            st.write(pd.Series(y_bal).value_counts())
-        else:
-            X_bal, y_bal = X, y
-            st.info("No balancing: Using original class distribution.")
-        st.session_state['X_bal'] = X_bal
-        st.session_state['y_bal'] = y_bal
+        except ValueError as e:
+            st.error(f"SMOTE failed: {e}")
+            st.warning(
+                "SMOTE requires at least 6 samples for every class. "
+                "Choose a different balancing method, drop rare classes, or increase your dataset."
+            )
+            X_bal, y_bal = X, y  # fallback to original
+    elif balance_method == "Random Over Sampling":
+        from imblearn.over_sampling import RandomOverSampler
+        ros = RandomOverSampler(random_state=42)
+        X_bal, y_bal = ros.fit_resample(X, y)
+        st.balloons()
+        st.success("Random Over Sampling applied!")
+        st.bar_chart(pd.Series(y_bal).value_counts())
+        st.write(pd.Series(y_bal).value_counts())
+    elif balance_method == "Random Under Sampling":
+        from imblearn.under_sampling import RandomUnderSampler
+        rus = RandomUnderSampler(random_state=42)
+        X_bal, y_bal = rus.fit_resample(X, y)
+        st.success("Random Under Sampling applied!")
+        st.bar_chart(pd.Series(y_bal).value_counts())
+        st.write(pd.Series(y_bal).value_counts())
+    else:
+        X_bal, y_bal = X, y
+        st.info("No balancing: Using original class distribution.")
+
+    # Cache balanced X/y for next tabs
+    st.session_state['X_bal'] = X_bal
+    st.session_state['y_bal'] = y_bal
+
 
 with tab5:
     st.markdown("### Train/Test Split")
