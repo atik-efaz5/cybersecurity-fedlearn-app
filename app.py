@@ -32,7 +32,7 @@ st.sidebar.info("Developed by Atik Shahariyar Hasan\n\n[LinkedIn](https://www.li
 
 @st.cache_data
 def load_sample_data():
-    url = "https://drive.google.com/uc?id=1ZUSX0T2PJS5aJE8cDs0x6ykfZHXsPprD"
+    url = "https://drive.google.com/uc?id=1AsGXT6622ZFu6nWXqtbGMknr54SuNYox"
     return pd.read_csv(url)
 
 def load_user_data(uploaded_file):
@@ -129,12 +129,4 @@ if st.button("Show Feature Importance (XAI)"):
     st.pyplot(fig)
 
 st.info("Thank you for using this demo! For feedback or collaboration, connect with Atik on LinkedIn.")
-
-
-
-
-
-
-
-
 
