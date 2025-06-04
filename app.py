@@ -182,11 +182,15 @@ with tab3:
             df.drop(columns=to_drop, inplace=True)
             st.success(f"Dropped {len(to_drop)} highly correlated features.")
         st.info("**Standard Scaler applied to numeric features:**")
-        scaler = StandardScaler()
+        target_col = 'Attack' if 'Attack' in df.columns else None
         num_cols = df.select_dtypes(include=np.number).columns
+        if target_col and target_col in num_cols:
+            num_cols = num_cols.drop(target_col)
+        scaler = StandardScaler()
         df[num_cols] = scaler.fit_transform(df[num_cols])
-        st.session_state['df'] = df
         st.write(df.head(5))
+
+
 
 with tab4:
     st.markdown("### Data Balancing (SMOTE & Sampling)")
