@@ -266,27 +266,54 @@ with tab4:
 
 with tab5:
     st.markdown("### Train/Test Split")
-    X_bal = st.session_state.get('X_bal')
-    y_bal = st.session_state.get('y_bal')
-    if X_bal is not None and y_bal is not None:
-        st.success("Splitting balanced data for modeling, as in your notebook.")
-        st.info(f"Current dataset shape: Features {X_bal.shape}, Target {y_bal.shape}")
-        test_size = st.slider("Select test set size (%)", 10, 50, 20)
-        random_state = st.number_input("Random seed", min_value=0, max_value=9999, value=42, step=1)
-        stratify = st.checkbox("Stratify split by class?", value=True)
+    st.success("Splitting balanced data for modeling, as in your notebook.")
+
+    # Fetch balanced data from previous tab (or fallback to current df)
+    X_bal = st.session_state.get('X_bal', df.drop(columns=['Attack']) if 'Attack' in df.columns else df)
+    y_bal = st.session_state.get('y_bal', df['Attack'] if 'Attack' in df.columns else pd.Series([0]*len(df)))
+
+    st.info(f"Current dataset shape: Features {X_bal.shape}, Target {y_bal.shape}")
+
+    # Let user set test size and random state
+    test_size = st.slider("Select test set size (%)", 10, 50, 20)
+    random_state = st.number_input("Random seed", min_value=0, max_value=9999, value=42, step=1)
+    stratify = st.checkbox("Stratify split by class?", value=True)
+
+    # ---- New: Warn user if any class is too small ----
+    if hasattr(y_bal, 'value_counts'):
+        counts = y_bal.value_counts()
+        tiny_classes = counts[counts < 2]
+        if not tiny_classes.empty:
+            st.warning(f"Warning: Some classes have less than 2 samples: {dict(tiny_classes)}. Stratified split may fail.")
+
+    # ---- Smart splitting to handle small classes! ----
+    try:
         X_train, X_test, y_train, y_test = train_test_split(
             X_bal, y_bal, 
             test_size=test_size/100, 
             random_state=random_state,
             stratify=y_bal if stratify else None
         )
-        st.success(f"Split complete! Training: {X_train.shape[0]} rows, Testing: {X_test.shape[0]} rows.")
-        st.write("**Training data preview:**")
-        st.dataframe(pd.concat([X_train.head(5), y_train.head(5)], axis=1))
-        st.session_state['X_train'] = X_train
-        st.session_state['X_test'] = X_test
-        st.session_state['y_train'] = y_train
-        st.session_state['y_test'] = y_test
+    except ValueError as e:
+        st.warning(f"Stratified split failed: {e}. Trying again without stratification...")
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_bal, y_bal, 
+            test_size=test_size/100, 
+            random_state=random_state,
+            stratify=None
+        )
+
+    st.success(f"Split complete! Training: {X_train.shape[0]} rows, Testing: {X_test.shape[0]} rows.")
+
+    # Show sample
+    st.write("**Training data preview:**")
+    st.dataframe(pd.concat([X_train.head(5), y_train.head(5)], axis=1))
+
+    # Cache split data for next tabs
+    st.session_state['X_train'] = X_train
+    st.session_state['X_test'] = X_test
+    st.session_state['y_train'] = y_train
+    st.session_state['y_test'] = y_test
 
 with tab6:
     st.markdown("### Model Training (Federated & Classical)")
