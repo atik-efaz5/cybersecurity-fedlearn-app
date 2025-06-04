@@ -75,6 +75,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "9. Download Results"
 ])
 
+
 with tab1:
     st.markdown("### Data Load & Cleaning")
     st.success("Every code line from your Colab is included here. You can use sample or upload your own data.")
