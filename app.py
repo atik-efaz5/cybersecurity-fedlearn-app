@@ -155,40 +155,58 @@ with tab2:
 
 with tab3:
     st.markdown("### Feature Engineering & Selection")
-    df = st.session_state.get('df')
-    if df is not None:
-        st.success("All feature selection, encoding, and scaling steps from your notebook are shown here.")
-        st.info("**Data types before encoding:**")
-        st.write(df.dtypes)
-        label_encoders = {}
-        for col in df.select_dtypes(include='object').columns:
-            le = LabelEncoder()
-            df[col] = le.fit_transform(df[col].astype(str))
-            label_encoders[col] = le
-            st.write(f"Encoded: {col}")
-        st.info("**Data types after encoding:**")
-        st.write(df.dtypes)
-        st.info("**Correlation Heatmap (Feature Selection):**")
-        corr = df.corr()
-        fig, ax = plt.subplots(figsize=(10, 5))
-        sns.heatmap(corr, cmap="coolwarm", annot=False, ax=ax)
-        st.pyplot(fig)
-        st.markdown("#### Remove highly correlated features")
-        corr_threshold = st.slider("Select correlation threshold:", 0.7, 0.99, 0.85)
-        upper = corr.where(np.triu(np.ones(corr.shape), k=1).astype(bool))
-        to_drop = [column for column in upper.columns if any(upper[column].abs() > corr_threshold)]
-        st.write(f"Features to drop: {to_drop}")
-        if st.button("Drop selected features", key="drop_features"):
-            df.drop(columns=to_drop, inplace=True)
-            st.success(f"Dropped {len(to_drop)} highly correlated features.")
-        st.info("**Standard Scaler applied to numeric features:**")
-        target_col = 'Attack' if 'Attack' in df.columns else None
-        num_cols = df.select_dtypes(include=np.number).columns
-        if target_col and target_col in num_cols:
-            num_cols = num_cols.drop(target_col)
-        scaler = StandardScaler()
-        df[num_cols] = scaler.fit_transform(df[num_cols])
-        st.write(df.head(5))
+    st.success("All feature selection, encoding, and scaling steps from your notebook are shown here.")
+    
+    # Show dtypes before processing
+    st.info("**Data types before encoding:**")
+    st.write(df.dtypes)
+    
+    # Label encoding for categorical variables
+    st.info("**Label Encoding for categorical columns:**")
+    label_encoders = {}
+    for col in df.select_dtypes(include='object').columns:
+        le = LabelEncoder()
+        df[col] = le.fit_transform(df[col].astype(str))
+        label_encoders[col] = le
+        st.write(f"Encoded: {col}")
+
+    st.info("**Data types after encoding:**")
+    st.write(df.dtypes)
+    
+    # Correlation heatmap for feature selection
+    st.info("**Correlation Heatmap (Feature Selection):**")
+    corr = df.corr()
+    fig, ax = plt.subplots(figsize=(10, 5))
+    sns.heatmap(corr, cmap="coolwarm", annot=False, ax=ax)
+    st.pyplot(fig)
+    
+    # User can select threshold for high-correlation feature removal
+    corr_threshold = st.slider("Select correlation threshold:", 0.7, 0.99, 0.85)
+    upper = corr.where(np.triu(np.ones(corr.shape), k=1).astype(bool))
+    to_drop = [column for column in upper.columns if any(upper[column].abs() > corr_threshold)]
+    # Prevent dropping the label column
+    if 'Attack' in to_drop:
+        to_drop.remove('Attack')
+    st.write(f"Features to drop: {to_drop}")
+    if st.button("Drop selected features", key="drop_features"):
+        df.drop(columns=to_drop, inplace=True)
+        st.success(f"Dropped {len(to_drop)} highly correlated features.")
+
+    # --- Debug info: Print shape and columns before scaling ---
+    st.info(f"DF shape before scaling: {df.shape}")
+    st.info(f"Columns before scaling: {df.columns.tolist()}")
+
+    # Scaling (StandardScaler) - do NOT scale target column!
+    st.info("**Standard Scaler applied to numeric features:**")
+    target_col = 'Attack' if 'Attack' in df.columns else None
+    num_cols = df.select_dtypes(include=np.number).columns
+    # Remove the target column from scaling columns
+    if target_col and target_col in num_cols:
+        num_cols = num_cols.drop(target_col)
+    scaler = StandardScaler()
+    df[num_cols] = scaler.fit_transform(df[num_cols])
+    st.write(df.head(5))
+
 
 
 
