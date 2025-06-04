@@ -53,7 +53,6 @@ with st.sidebar:
         ), unsafe_allow_html=True
     )
     st.markdown("---")
-    st.info("Internship-ready ML/AI app. All code included!", icon="💼")
     st.caption("Updated: 2025")
 
 st.markdown(
